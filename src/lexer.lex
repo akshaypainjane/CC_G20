@@ -6,10 +6,14 @@
 #include <fstream>
 #include <unordered_map>
 #include <string>
+#include <stack>
     
 extern int yyerror(std::string msg);
 std::unordered_map<std::string, std::string> mp;
-bool flag = false;
+std::stack<bool> stk;
+    
+
+
 %}
 
 %%    
@@ -18,7 +22,8 @@ bool flag = false;
 "/*"[-a-zA-Z0-9+*/;()_= \n]*"*/"     {}   // put /s here 
     
 "#undef "[_a-zA-Z][_a-zA-Z0-9]* { 
-
+    
+    
     std::string str = yytext;
     std::string iden = "";
     
@@ -33,7 +38,7 @@ bool flag = false;
 }
     
 "#def "([a-zA-Z_][a-zA-Z0-9_]*" ".*(\\\n)?)+ { 
-
+    
     std::string str = yytext;
     std::string iden = "", text = "";
     
@@ -44,7 +49,7 @@ bool flag = false;
         i++;
     }
     i++;
-
+    
     while(i < (int)str.size())
     {
         if (str[i] != '\\')
@@ -55,8 +60,10 @@ bool flag = false;
     mp[iden] = text;
 }
     
-  
+    
 "#ifdef "[_a-zA-Z][_a-zA-Z0-9]*"\n" {
+
+    stk.push(false);
     
     std::string str = yytext;
     std::string iden = "";
@@ -68,36 +75,37 @@ bool flag = false;
         i++;
     }
     
-    if(mp.find(iden) == mp.end() || mp[iden] == "")
+    if(mp.find(iden) == mp.end() )
     {
         char c = yyinput();
         char c1 = yyinput();
-
+    
         while(!(c == '#' && c1 == 'e'))
         {
             unput(c1);
             unput(c);
-
+    
             yyinput();
-
+    
             c = yyinput();
             c1 = yyinput();
         }
-
+    
         unput(c1);
         unput(c);
     }
     
     else
-    {
-        flag = true;
+    {     
+        stk.pop();
+        stk.push(true);
     }
 }
     
     
 "#elif "[_a-zA-Z][_a-zA-Z0-9]*"\n" {
     
-    if(!flag)
+    if(stk.top() == false)
     {
         std::string str = yytext;
         std::string iden = "";
@@ -109,29 +117,30 @@ bool flag = false;
             i++;
         }
     
-        if(mp.find(iden) == mp.end() || mp[iden] == "")
+        if(mp.find(iden) == mp.end() )
         {
             char c = yyinput();
             char c1 = yyinput();
-
+    
             while(!(c == '#' && c1 == 'e'))
             {
                 unput(c1);
                 unput(c);
-
+    
                 yyinput();
-
+    
                 c = yyinput();
                 c1 = yyinput();
             }
-
+    
             unput(c1);
             unput(c);
         }
     
         else
         {
-            flag = true;
+            stk.pop();
+            stk.push(true);
         }
     }
     
@@ -139,44 +148,42 @@ bool flag = false;
     {
         char c = yyinput();
         char c1 = yyinput();
-
+    
         while(!(c == '#' && c1 == 'e'))
         {
             unput(c1);
             unput(c);
-
+    
             yyinput();
-
+    
             c = yyinput();
             c1 = yyinput();
         }
-
+    
         unput(c1);
         unput(c);
-    }
-    
-    
+    }   
 }
     
     
 "#else\n" {
     
-    if(flag)
+    if(stk.top() == true)
     {
         char c = yyinput();
         char c1 = yyinput();
-
+    
         while(!(c == '#' && c1 == 'e'))
         {
             unput(c1);
             unput(c);
-
+    
             yyinput();
-
+    
             c = yyinput();
             c1 = yyinput();
         }
-
+    
         unput(c1);
         unput(c);
     }
@@ -185,7 +192,7 @@ bool flag = false;
     
 "#endif" {
     
-    flag = false;
+    stk.pop();
 }
     
 "+"       { return TPLUS; }
