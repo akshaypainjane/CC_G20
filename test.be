@@ -1,8 +1,17 @@
-let abc = 123 * 20 + 20 + (22 / 2) - 3;  //this is a line
-/*  
-this is a testcase
-*/
-dbg abc + abc;
+#def DEBUG 10
+let x = 5;
+#undef DEBUG
 
-#def ABC 2
-dbg ABC+abc;
+#ifdef DEBUG11
+dbg x;
+
+#elif DEBUG22
+dbg x*4;
+
+#elif DEBUG
+dbg 940;
+
+#else
+dbg x*100;
+
+#endif
